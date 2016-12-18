@@ -3,9 +3,9 @@
 
 # from __future__ import print_function
 import sys
+import json
 import requests
 import colorama
-import json
 
 __title__ = 'itools'
 __version__ = "1.0"
