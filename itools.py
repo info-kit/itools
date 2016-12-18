@@ -13,11 +13,13 @@ __version__ = "1.0"
 def doShowHelp():
 	help_text = """
 	Unknown option
-	usage: itools.py [option] [-h | --help | -v | --version]
+	usage: itools.py [option]
 	
 	option:
-	cleancache - clean Discovery cache
-	test - request URLS
+	-h, --help                  show help note
+	-v, --version               show version number
+	-cc, --cleancache           clean Discovery cache
+	-r, --request, --requests   request URLs
 	
 	"""
 	print(help_text)
@@ -25,8 +27,8 @@ def doShowHelp():
 def doShowVersion():
 	print(__version__)
 
-def doCommand():
-	for arg in sys.argv:
+def doCommand(args):
+	for arg in args:
 		lower_arg = arg.lower()
 		if lower_arg == '-h' or lower_arg == '--help':
 			doShowHelp()
@@ -62,14 +64,24 @@ def doRequest():
 	list = readConfig()
 	for sp in list:
 		try:
+			# get params
 			full_url = sp["url"]     
-			response = requests.post(full_url, auth=(sp["httpBasicAuth_user"],  sp["httpBasicAuth_pass"]))
+			httpBasicAuth_user = sp["httpBasicAuth_user"]
+			httpBasicAuth_pass = sp["httpBasicAuth_pass"]
+			
+			if(httpBasicAuth_user != ""):
+				response = requests.get(full_url)#, auth=(sp["httpBasicAuth_user"],  sp["httpBasicAuth_pass"]))
+			else:
+				response = requests.post(full_url, auth=(httpBasicAuth_user,  httpBasicAuth_pass), timeout=(30, 30))
+			
 			#checkResponse(response)
-			print(full_url)
-			colorPrintSuccess(response.text)
+			colorPrintSuccess("OK for server " + full_url)
+			print(response.text)
 		except Exception as e:
-			colorPrintFail(response.text)
-			colorPrintFail(e)
+			colorPrintFail("Error for server " + full_url)
+			print(response.text)
+			print(e)
+
 			
 def writeConfig(params_collection, fileName = 'itools.cfg'):
 	str = json.dumps(params_collection, indent = 4)
@@ -119,7 +131,7 @@ def colorPrintFail(string):
 	print(colorama.Fore.RED + string)
 
 def main():
-	doCommand()
+	doCommand(sys.argv)
 	
 if __name__ == "__main__":
 	main()
