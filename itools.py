@@ -1,5 +1,5 @@
 ﻿# TO DO LIST:
-# 1. short results at the end (some kind of summary). Probably it makes scence to make different mods: debug, short and so on.
+# 1. short results at the end (some kind of summary). Probably it makes sensee to make different mods: debug, short and so on.
 # 2. different error messages for different exceptions (JSONDecodeError, for instance).
 
 import sys
