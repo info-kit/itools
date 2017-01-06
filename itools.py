@@ -1,7 +1,7 @@
-﻿# Here I would like to research the possibilities of sys library.
-# C:\Python\Programs\Python Lab\2016\2016-11-12_Python_sys_arg.py
+﻿# TO DO LIST:
+# 1. short results at the end (some kind of summary). Probably it makes scence to make different mods: debug, short and so on.
+# 2. different error messages for different exceptions (JSONDecodeError, for instance).
 
-# from __future__ import print_function
 import sys
 import json
 import requests
@@ -24,22 +24,21 @@ def doShowHelp(isExpected = True):
 	help_text = ""
 	if(isExpected == False):
 		help_text += """
-	Unknown option! Check the usage description below
-	"""
+Unknown option! Check the usage description below
+"""
 	help_text += """
-	usage: itools.py [option]
-	
-	option:
-	-h, --help                  show help note
-	-v, --version               show version number
-	-cc, --cleancache           clean Discovery cache, suboptions are required:
-		-p, -- prod				process only production servers
-		-t, --test				process only test servers
-	-r, --request, --requests   request URLs
-		-p, -- prod				process only production servers
-		-t, --test				process only test servers
-	
-	"""
+Usage: itools.py [option]
+
+Available options:
+-h, --help                  show help note
+-v, --version               show version number
+-cc, --cleancache           clean Discovery cache, suboptions are required:
+	-p, -- prod             process only production servers
+	-t, --test              process only test servers
+-r, --request, --requests   request URLs, suboptions are required:
+	-p, -- prod             process only production servers
+	-t, --test              process only test servers
+"""
 	print(help_text)
 	
 def doShowVersion():
@@ -128,6 +127,7 @@ def doCleanCache(type = None):
 
 def doRequest(type = None):	 
 	if type is not None and type != resourceType.DO_NOTHING: 
+		pdb.set_trace();
 		print("Requests are starting. Please wait...")
 		list = readConfig()
 		for sp in list:
@@ -139,7 +139,7 @@ def doRequest(type = None):
 					httpBasicAuth_user = sp["httpBasicAuth_user"]
 					httpBasicAuth_pass = sp["httpBasicAuth_pass"]
 					
-					if(httpBasicAuth_user != ""):
+					if(httpBasicAuth_user == ""):
 						response = requests.get(url)#, auth=(sp["httpBasicAuth_user"],  sp["httpBasicAuth_pass"]))
 					else:
 						response = requests.post(url, auth=(httpBasicAuth_user,  httpBasicAuth_pass), timeout=(30, 30))
@@ -168,9 +168,15 @@ def writeConfig(params_collection, fileName = 'itools.cfg'):
 
 
 def readConfig(fileName = 'itools.cfg'):
-	with open(fileName, 'r') as infile:  
-		str = infile.read()
-	return json.loads(str)
+	try:
+		with open(fileName, 'r') as infile:  
+			str = infile.read()
+		return json.loads(str)
+	#except JSONDecodeError:
+	#	print(fileName + " has a wrong file forman. Should be JSON.")
+	except Exception as e:
+		print(type(e))
+		print(e)
 
 def createSoapRequest(admin, password):
     soap_req = """<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:sys="http://www.in-touch.ru/services/system-administration">
