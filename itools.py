@@ -6,82 +6,159 @@ import sys
 import json
 import requests
 import colorama
+from enum import Enum
+
+import pdb; 
 
 __title__ = 'itools'
 __version__ = "1.0"
 
-def doShowHelp():
-	help_text = """
-	Unknown option
+class resourceType(Enum):
+	DO_NOTHING 	= 0 
+	CC_TEST = 1
+	CC_PROD = 2
+	R_TEST 	= 3
+	R_PROD 	= 4
+
+def doShowHelp(isExpected = True):
+	help_text = ""
+	if(isExpected == False):
+		help_text += """
+	Unknown option! Check the usage description below
+	"""
+	help_text += """
 	usage: itools.py [option]
 	
 	option:
 	-h, --help                  show help note
 	-v, --version               show version number
-	-cc, --cleancache           clean Discovery cache
+	-cc, --cleancache           clean Discovery cache, suboptions are required:
+		-p, -- prod				process only production servers
+		-t, --test				process only test servers
 	-r, --request, --requests   request URLs
+		-p, -- prod				process only production servers
+		-t, --test				process only test servers
 	
 	"""
 	print(help_text)
 	
 def doShowVersion():
-	print(__version__)
+	print(__title__ + " " + __version__)
 
 def doCommand(args):
-	for arg in args:
+	try:
+		arg = args[1]
 		lower_arg = arg.lower()
+		
 		if lower_arg == '-h' or lower_arg == '--help':
 			doShowHelp()
 		elif lower_arg == '-v' or lower_arg == '--version':
 			doShowVersion()
 		elif lower_arg == '-cc' or lower_arg == '--cleancache':
-			doCleanCache()
+			nextPosition = args.index(arg) + 1
+			subarg = args[nextPosition]
+			type = getTypeFromSubCommand(lower_arg, subarg)
+			if type is not None:
+				doCleanCache(type)
+			else:
+				raise
 		elif lower_arg == '-r' or lower_arg == '--request' or lower_arg == '--requests':
-			doRequest()
+			nextPosition = args.index(arg) + 1
+			subarg = args[nextPosition]
+			type = getTypeFromSubCommand(lower_arg, subarg)
+			if type is not None:
+				doRequest(type)
+			else:
+				raise
+
 		else: #default case
-			doShowHelp()
+			raise
 
-def doCleanCache():	 
-	print("Cache cleaning is starting. Please wait...")
+	except Exception as e:
+		doShowHelp(isExpected = False)
 
-	list = readConfig()
-	
-	#AuthUser = "autotester"
-	#AuthPassword = "Intouch123"
-	for sp in list:
-		try:
-			full_url = sp["url"]     
-			#response = requests.post(full_url, data = createSoapRequest(sp[1], sp[2]), auth=(AuthUser,  AuthPassword), timeout=(30, 30))
-			#checkResponse(response)
-			colorPrintSuccess(full_url)
-		except Exception as e:
-			pass
-			#colorPrintSuccess(response, e)
+def getTypeFromSubCommand(arg, subarg):
+	lower_arg = arg.lower()
+	lower_subarg = subarg.lower()
+	type = None
+	if lower_arg == '-cc' or lower_arg == '--cleancache':
+		if lower_subarg == '-p' or lower_subarg == '--prod':
+			if checkAssurance():
+				type = resourceType.CC_PROD
+			else:
+				type = resourceType.DO_NOTHING
+		elif lower_subarg == '-t' or lower_subarg == '--test':
+			type = resourceType.CC_TEST
+	if lower_arg == '-r' or lower_arg == '--request' or lower_arg == '--requests':
+		if lower_subarg == '-p' or lower_subarg == '--prod':
+			if checkAssurance():
+				type = resourceType.R_PROD
+			else:
+				type = resourceType.DO_NOTHING
+		elif lower_subarg == '-t' or lower_subarg == '--test':
+			type = resourceType.R_TEST
+	return type
+
+def doCleanCache(type = None):	 
+	if type is not None and type != resourceType.DO_NOTHING:
+		print("Cache cleaning is starting. Please wait...")
+
+		list = readConfig()
+		
+		#AuthUser = "autotester"
+		#AuthPassword = "Intouch123"
+		for sp in list:
+			# Check type of resource.
+			if(resourceType[sp["type"]] == type):
+					try:
+						url = sp["url"]     
+						httpBasicAuth_user = sp["httpBasicAuth_user"]
+						httpBasicAuth_pass = sp["httpBasicAuth_pass"]
+						user = sp["user"]
+						password = sp["password"]
+						response = requests.post(url, data = createSoapRequest(user, password), auth=(httpBasicAuth_user,  httpBasicAuth_pass), timeout=(30, 30))
+						#checkResponse(response)
+						colorPrintSuccess(url)
+						print(response.text)
+					except Exception as e:
+						colorPrintFail("Error for server " + url)
+						print(response.text)
+						print(e)
 	return
 
-def doRequest():	 
-	print("Requests is starting. Please wait...")
-	list = readConfig()
-	for sp in list:
-		try:
-			# get params
-			full_url = sp["url"]     
-			httpBasicAuth_user = sp["httpBasicAuth_user"]
-			httpBasicAuth_pass = sp["httpBasicAuth_pass"]
-			
-			if(httpBasicAuth_user != ""):
-				response = requests.get(full_url)#, auth=(sp["httpBasicAuth_user"],  sp["httpBasicAuth_pass"]))
-			else:
-				response = requests.post(full_url, auth=(httpBasicAuth_user,  httpBasicAuth_pass), timeout=(30, 30))
-			
-			#checkResponse(response)
-			colorPrintSuccess("OK for server " + full_url)
-			print(response.text)
-		except Exception as e:
-			colorPrintFail("Error for server " + full_url)
-			print(response.text)
-			print(e)
+def doRequest(type = None):	 
+	if type is not None and type != resourceType.DO_NOTHING: 
+		print("Requests are starting. Please wait...")
+		list = readConfig()
+		for sp in list:
+			# Check type of resource.
+			if(resourceType[sp["type"]] == type):
+				try:
+					# get params
+					url = sp["url"]     
+					httpBasicAuth_user = sp["httpBasicAuth_user"]
+					httpBasicAuth_pass = sp["httpBasicAuth_pass"]
+					
+					if(httpBasicAuth_user != ""):
+						response = requests.get(url)#, auth=(sp["httpBasicAuth_user"],  sp["httpBasicAuth_pass"]))
+					else:
+						response = requests.post(url, auth=(httpBasicAuth_user,  httpBasicAuth_pass), timeout=(30, 30))
+					
+					#checkResponse(response)
+					colorPrintSuccess("OK for server " + url)
+					print(response.text)
+				except Exception as e:
+					colorPrintFail("Error for server " + url)
+					print(response.text)
+					print(e)
 
+def checkAssurance():
+	assurance = False
+	answer = input("You are going to process production servers. Are you shure?[y/n]")
+	answer = answer.lower()
+	if answer == "y" or answer == "yes":
+		assurance = True
+	return assurance
 			
 def writeConfig(params_collection, fileName = 'itools.cfg'):
 	str = json.dumps(params_collection, indent = 4)
