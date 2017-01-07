@@ -1,6 +1,8 @@
 ﻿# TO DO LIST:
 # 1. short results at the end (some kind of summary). Probably it makes sense to make different mods: debug, short and so on.
 # 2. different error messages for different exceptions (JSONDecodeError, for instance).
+# 3. advanced result check (check response of web-services).
+# 4. response.text saves the value from the previous request. Probably, it's a bug of requests library.
 
 import sys
 import json
@@ -127,7 +129,7 @@ def doCleanCache(type = None):
 
 def doRequest(type = None):	 
 	if type is not None and type != resourceType.DO_NOTHING: 
-		pdb.set_trace();
+		#pdb.set_trace();
 		print("Requests are starting. Please wait...")
 		list = readConfig()
 		for sp in list:
@@ -146,7 +148,7 @@ def doRequest(type = None):
 					
 					#checkResponse(response)
 					colorPrintSuccess("OK for server " + url)
-					print(response.text)
+					#print(response.text)
 				except Exception as e:
 					colorPrintFail("Error for server " + url)
 					print(response.text)
