@@ -195,10 +195,6 @@ def doCleanCache(type = None):
 
 def doRequest(type = None):	 
 	if type is not None and type != resourceType.DO_NOTHING: 
-<<<<<<< HEAD
-		#pdb.set_trace();
-=======
->>>>>>> origin/master
 		print("Requests are starting. Please wait...")
 		list = readConfig()
 		for sp in list:
