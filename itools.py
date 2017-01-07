@@ -9,9 +9,50 @@ import colorama
 from enum import Enum
 
 import pdb; 
+#pdb.set_trace();
 
 __title__ = 'itools'
 __version__ = "1.0"
+
+OPTION_HELP = {
+"-h",
+"--help"
+}
+
+OPTION_VERSION = {
+"-v",
+"--version"
+}
+
+OPTION_CLEANCACHE = {
+"-cc",
+"--cleancache"
+}
+
+OPTION_REQUEST = {
+"-r",
+"--request",
+"--requests"
+}
+
+SUBOPTION_PRODUCTION_RESOURCES = {
+"-p",
+"--prod",
+"--production"
+}
+
+SUBOPTION_TEST_RESOURCES = {
+"-t",
+"--test"
+}
+
+RESOURCE_TYPE = {
+	"DO_NOTHING",
+	"CC_TEST",
+	"CC_PROD",
+	"R_TEST",
+	"R_PROD"
+}
 
 class resourceType(Enum):
 	DO_NOTHING 	= 0 
@@ -19,6 +60,18 @@ class resourceType(Enum):
 	CC_PROD = 2
 	R_TEST 	= 3
 	R_PROD 	= 4
+	
+def getDescriptionForOption(set, description, isSubOption = False):
+	help_text_substring = ""
+	indent_for_suboption = "    "
+	if isSubOption:
+		help_text_substring += indent_for_suboption
+	for item in sorted(set):
+		if help_text_substring != "" and help_text_substring != indent_for_suboption:
+			help_text_substring += ", "
+		help_text_substring += item
+	help_text_substring += " : " + description + "\n"
+	return help_text_substring
 
 def doShowHelp(isExpected = True):
 	help_text = ""
@@ -30,6 +83,19 @@ Unknown option! Check the usage description below
 Usage: itools.py [option]
 
 Available options:
+"""
+	# Create descriptions.
+	help_text += getDescriptionForOption(OPTION_HELP, "show help note")
+	help_text += getDescriptionForOption(OPTION_VERSION, "show version number")
+	help_text += getDescriptionForOption(OPTION_CLEANCACHE, "clean Discovery cache, suboptions are required")
+	help_text += getDescriptionForOption(SUBOPTION_PRODUCTION_RESOURCES, "process only production servers", True)
+	help_text += getDescriptionForOption(SUBOPTION_TEST_RESOURCES, "process only test servers", True)
+	help_text += getDescriptionForOption(OPTION_HELP, "request URLs, suboptions are required")
+	help_text += getDescriptionForOption(SUBOPTION_PRODUCTION_RESOURCES, "process only production servers", True)
+	help_text += getDescriptionForOption(SUBOPTION_TEST_RESOURCES, "process only test servers", True)
+	
+	# Save for backup, not used in script.
+	help_text_formated = """
 -h, --help                  show help note
 -v, --version               show version number
 -cc, --cleancache           clean Discovery cache, suboptions are required:
@@ -49,11 +115,11 @@ def doCommand(args):
 		arg = args[1]
 		lower_arg = arg.lower()
 		
-		if lower_arg == '-h' or lower_arg == '--help':
+		if lower_arg in OPTION_HELP:
 			doShowHelp()
-		elif lower_arg == '-v' or lower_arg == '--version':
+		elif lower_arg in OPTION_VERSION:
 			doShowVersion()
-		elif lower_arg == '-cc' or lower_arg == '--cleancache':
+		elif lower_arg in OPTION_CLEANCACHE:
 			nextPosition = args.index(arg) + 1
 			subarg = args[nextPosition]
 			type = getTypeFromSubCommand(lower_arg, subarg)
@@ -61,7 +127,7 @@ def doCommand(args):
 				doCleanCache(type)
 			else:
 				raise
-		elif lower_arg == '-r' or lower_arg == '--request' or lower_arg == '--requests':
+		elif lower_arg in OPTION_REQUEST:
 			nextPosition = args.index(arg) + 1
 			subarg = args[nextPosition]
 			type = getTypeFromSubCommand(lower_arg, subarg)
@@ -80,21 +146,21 @@ def getTypeFromSubCommand(arg, subarg):
 	lower_arg = arg.lower()
 	lower_subarg = subarg.lower()
 	type = None
-	if lower_arg == '-cc' or lower_arg == '--cleancache':
-		if lower_subarg == '-p' or lower_subarg == '--prod':
+	if lower_arg in OPTION_CLEANCACHE:
+		if lower_subarg in SUBOPTION_PRODUCTION_RESOURCES:
 			if checkAssurance():
 				type = resourceType.CC_PROD
 			else:
 				type = resourceType.DO_NOTHING
-		elif lower_subarg == '-t' or lower_subarg == '--test':
+		elif lower_subarg in SUBOPTION_TEST_RESOURCES:
 			type = resourceType.CC_TEST
-	if lower_arg == '-r' or lower_arg == '--request' or lower_arg == '--requests':
-		if lower_subarg == '-p' or lower_subarg == '--prod':
+	if lower_arg in OPTION_REQUEST:
+		if lower_subarg in SUBOPTION_PRODUCTION_RESOURCES:
 			if checkAssurance():
 				type = resourceType.R_PROD
 			else:
 				type = resourceType.DO_NOTHING
-		elif lower_subarg == '-t' or lower_subarg == '--test':
+		elif lower_subarg in SUBOPTION_TEST_RESOURCES:
 			type = resourceType.R_TEST
 	return type
 
@@ -127,7 +193,6 @@ def doCleanCache(type = None):
 
 def doRequest(type = None):	 
 	if type is not None and type != resourceType.DO_NOTHING: 
-		pdb.set_trace();
 		print("Requests are starting. Please wait...")
 		list = readConfig()
 		for sp in list:
